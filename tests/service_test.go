@@ -2,6 +2,8 @@ package tests
 
 import (
 	"context"
+	"log/slog"
+	"os"
 	"quoter/internal/models"
 	"quoter/internal/service"
 	"quoter/internal/storage"
@@ -52,7 +54,8 @@ func (m *mockStorage) DeleteQuote(ctx context.Context, id int) error {
 func TestQuoteService(t *testing.T) {
 	ctx := context.Background()
 	storage := &mockStorage{}
-	service := service.NewQuoteService(storage, nil)
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	service := service.NewQuoteService(storage, logger)
 
 	t.Run("Add Quote", func(t *testing.T) {
 		_, err := service.AddQuote(ctx, models.Quote{Author: "Author", Text: "Quote"})

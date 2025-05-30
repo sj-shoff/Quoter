@@ -3,8 +3,10 @@ package tests
 import (
 	"bytes"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"quoter/internal/http-server/handler"
 	"quoter/internal/models"
 	"quoter/internal/service"
@@ -15,8 +17,9 @@ import (
 
 func setupHandler() *handler.QuoteHandler {
 	storage, _ := inmemory.NewInMemoryStorage()
-	service := service.NewQuoteService(storage, nil)
-	return handler.NewQuoteHandler(service, nil)
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	service := service.NewQuoteService(storage, logger)
+	return handler.NewQuoteHandler(service, logger)
 }
 
 func addTestQuote(h *handler.QuoteHandler, author, text string) *models.Quote {
@@ -67,7 +70,6 @@ func TestAddQuoteHandler(t *testing.T) {
 func TestGetQuotesHandler(t *testing.T) {
 	h := setupHandler()
 
-	// Добавляем тестовые данные через HTTP POST
 	addTestQuote(h, "Author1", "Quote1")
 	addTestQuote(h, "Author2", "Quote2")
 
@@ -133,7 +135,6 @@ func TestRandomQuoteHandler(t *testing.T) {
 func TestDeleteQuoteHandler(t *testing.T) {
 	h := setupHandler()
 
-	// Добавляем тестовые данные через HTTP POST
 	quote := addTestQuote(h, "ToDelete", "Delete me")
 
 	t.Run("Valid Delete", func(t *testing.T) {
