@@ -18,11 +18,11 @@ var (
 )
 
 type QuoteHandler struct {
-	service *service.QuoteService
+	service service.QuoteServiceInterface
 	logger  *slog.Logger
 }
 
-func NewQuoteHandler(service *service.QuoteService, logger *slog.Logger) *QuoteHandler {
+func NewQuoteHandler(service service.QuoteServiceInterface, logger *slog.Logger) *QuoteHandler {
 	return &QuoteHandler{
 		service: service,
 		logger:  logger,
@@ -126,16 +126,25 @@ func (h *QuoteHandler) DeleteQuote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if id <= 0 {
+		h.logger.WarnContext(ctx, "Invalid ID value", "id", id)
+		h.sendError(w, http.StatusBadRequest, "ID must be positive integer")
+		return
+	}
+
 	if err := h.service.DeleteQuote(ctx, id); err != nil {
 		if errors.Is(err, service.ErrNotFound) {
+			h.logger.WarnContext(ctx, "Quote not found", "id", id)
 			h.sendError(w, http.StatusNotFound, "Quote not found")
 			return
 		}
-		h.logger.ErrorContext(ctx, "Failed to delete quote", "error", err)
+
+		h.logger.ErrorContext(ctx, "Failed to delete quote", "id", id, "error", err)
 		h.sendError(w, http.StatusInternalServerError, "Failed to delete quote")
 		return
 	}
 
+	h.logger.InfoContext(ctx, "Quote deleted", "id", id)
 	w.WriteHeader(http.StatusNoContent)
 }
 

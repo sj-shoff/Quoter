@@ -2,13 +2,10 @@ package service
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"quoter/internal/models"
 	"quoter/internal/storage"
 )
-
-var ErrNotFound = errors.New("not found")
 
 type QuoteService struct {
 	storage storage.QuoteStorage

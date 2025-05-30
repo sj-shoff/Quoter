@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"os"
@@ -10,50 +11,60 @@ import (
 	"time"
 
 	"quoter/internal/http-server/handler"
-	"quoter/internal/http-server/middleware"
+	middleware "quoter/internal/http-server/middleware"
 	"quoter/internal/service"
 	"quoter/internal/storage/inmemory"
 )
 
 func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+
+	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
 	}))
-	slog.SetDefault(logger)
 
-	store := inmemory.NewInMemoryStorage()
+	storage, err := inmemory.NewInMemoryStorage()
+	if err != nil {
+		log.Error("Failed to init storage")
+		os.Exit(1)
+	}
 
-	quoteService := service.NewQuoteService(store, logger)
+	quoteService := service.NewQuoteService(storage, log)
 
-	quoteHandler := handler.NewQuoteHandler(quoteService, logger)
+	quoteHandler := handler.NewQuoteHandler(quoteService, log)
 
 	mux := http.NewServeMux()
 	quoteHandler.RegisterRoutes(mux)
 
-	stack := middleware.New(logger)(mux)
-
-	srv := &http.Server{
-		Addr:    ":8080",
-		Handler: stack,
-	}
+	handlerWithLogger := middleware.New(log)(mux)
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
+	srv := &http.Server{
+		Addr:    ":8080",
+		Handler: handlerWithLogger,
+	}
+
 	go func() {
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Error("Server failed", "error", err)
+		err := srv.ListenAndServe()
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Error("Failed to start server")
 		}
 	}()
-	logger.Info("Server started on :8080")
+
+	log.Info("Server started")
 
 	<-done
-	logger.Info("Server stopped")
+	log.Info("Stopping server")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		logger.Error("Server shutdown failed", "error", err)
+		log.Error("Failed to stop server")
+
+		return
 	}
+
+	log.Info("Server stopped")
 }

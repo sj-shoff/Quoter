@@ -1,7 +1,5 @@
 run:
 	go run ./cmd/quoter/main.go
 
-build:
-
-test:
-	go test -v ./tests/...
+tests:
+	go test -v ./tests

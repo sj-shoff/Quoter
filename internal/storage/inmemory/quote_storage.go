@@ -17,16 +17,17 @@ type inMemoryStorage struct {
 	rand   *rand.Rand
 }
 
-func NewInMemoryStorage() storage.QuoteStorage {
+func NewInMemoryStorage() (storage.QuoteStorage, error) {
 	src := rand.NewSource(time.Now().UnixNano())
 	return &inMemoryStorage{
 		quotes: make([]models.Quote, 0),
 		rand:   rand.New(src),
-	}
+	}, nil
 }
 
 func (s *inMemoryStorage) AddQuote(ctx context.Context, quote models.Quote) (models.Quote, error) {
-	quote.ID = int(s.nextID.Add(1))
+	newID := s.nextID.Add(1)
+	quote.ID = int(newID)
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -49,10 +50,12 @@ func (s *inMemoryStorage) GetRandomQuote(ctx context.Context) (*models.Quote, er
 	defer s.mu.RUnlock()
 
 	if len(s.quotes) == 0 {
-		return nil, nil
+		return nil, storage.ErrNotFound
 	}
+
 	idx := s.rand.Intn(len(s.quotes))
-	return &s.quotes[idx], nil
+	quote := s.quotes[idx]
+	return &quote, nil
 }
 
 func (s *inMemoryStorage) GetQuotesByAuthor(ctx context.Context, author string) ([]models.Quote, error) {
