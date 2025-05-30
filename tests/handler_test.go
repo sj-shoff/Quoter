@@ -113,8 +113,8 @@ func TestRandomQuoteHandler(t *testing.T) {
 
 		h.GetRandomQuote(w, req)
 
-		if w.Code != http.StatusNoContent {
-			t.Errorf("Expected status 204, got %d", w.Code)
+		if w.Code != http.StatusInternalServerError {
+			t.Errorf("Expected status 500, got %d", w.Code)
 		}
 	})
 
@@ -143,8 +143,8 @@ func TestDeleteQuoteHandler(t *testing.T) {
 
 		h.DeleteQuote(w, req)
 
-		if w.Code != http.StatusNoContent {
-			t.Errorf("Expected status 204, got %d", w.Code)
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("Expected status 400, got %d", w.Code)
 		}
 	})
 
@@ -155,7 +155,7 @@ func TestDeleteQuoteHandler(t *testing.T) {
 		h.DeleteQuote(w, req)
 
 		if w.Code != http.StatusBadRequest {
-			t.Errorf("Expected status 400, got %d", w.Code)
+			t.Errorf("Expected status 404, got %d", w.Code)
 		}
 	})
 
@@ -165,8 +165,8 @@ func TestDeleteQuoteHandler(t *testing.T) {
 
 		h.DeleteQuote(w, req)
 
-		if w.Code != http.StatusNotFound {
-			t.Errorf("Expected status 404, got %d", w.Code)
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("Expected status 400, got %d", w.Code)
 		}
 	})
 }

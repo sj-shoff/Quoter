@@ -100,16 +100,14 @@ func (h *QuoteHandler) GetAllQuotes(w http.ResponseWriter, r *http.Request) {
 
 func (h *QuoteHandler) GetRandomQuote(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
 	quote, err := h.service.GetRandomQuote(ctx)
 	if err != nil {
+		if errors.Is(err, service.ErrNotFound) {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
 		h.logger.ErrorContext(ctx, "Failed to get random quote", "error", err)
 		h.sendError(w, http.StatusInternalServerError, "Failed to get random quote")
-		return
-	}
-
-	if quote == nil {
-		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
@@ -135,7 +133,7 @@ func (h *QuoteHandler) DeleteQuote(w http.ResponseWriter, r *http.Request) {
 	if err := h.service.DeleteQuote(ctx, id); err != nil {
 		if errors.Is(err, service.ErrNotFound) {
 			h.logger.WarnContext(ctx, "Quote not found", "id", id)
-			h.sendError(w, http.StatusNotFound, "Quote not found")
+			h.sendError(w, http.StatusBadRequest, "Quote not found")
 			return
 		}
 
