@@ -96,7 +96,7 @@ curl -X DELETE http://localhost:8080/quotes/1
 Для запуска юнит-тестов выполните:
 
 ```bash
-make tests
+make -B tests
 ```
 
 Тесты покрывают:
