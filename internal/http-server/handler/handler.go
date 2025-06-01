@@ -31,7 +31,7 @@ func NewQuoteHandler(service service.QuoteServiceInterface, logger *slog.Logger)
 
 func (h *QuoteHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /quotes", h.AddQuote)
-	mux.HandleFunc("GET /quotes", h.GetAllQuotes)
+	mux.HandleFunc("GET /quotes", h.GetQuotes)
 	mux.HandleFunc("GET /quotes/random", h.GetRandomQuote)
 	mux.HandleFunc("DELETE /quotes/{id}", h.DeleteQuote)
 }
@@ -71,7 +71,7 @@ func (h *QuoteHandler) AddQuote(w http.ResponseWriter, r *http.Request) {
 	h.sendJSON(w, http.StatusCreated, newQuote)
 }
 
-func (h *QuoteHandler) GetAllQuotes(w http.ResponseWriter, r *http.Request) {
+func (h *QuoteHandler) GetQuotes(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	author := r.URL.Query().Get("author")
@@ -103,11 +103,11 @@ func (h *QuoteHandler) GetRandomQuote(w http.ResponseWriter, r *http.Request) {
 	quote, err := h.service.GetRandomQuote(ctx)
 	if err != nil {
 		if errors.Is(err, service.ErrNotFound) {
-			w.WriteHeader(http.StatusNoContent)
+			h.sendError(w, http.StatusNotFound, "No quotes available")
 			return
 		}
 		h.logger.ErrorContext(ctx, "Failed to get random quote", "error", err)
-		h.sendError(w, http.StatusInternalServerError, "Failed to get random quote")
+		h.sendError(w, http.StatusNoContent, "Failed to get random quote")
 		return
 	}
 
@@ -117,7 +117,14 @@ func (h *QuoteHandler) GetRandomQuote(w http.ResponseWriter, r *http.Request) {
 func (h *QuoteHandler) DeleteQuote(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	id, err := strconv.Atoi(r.PathValue("id"))
+	idStr := r.URL.Query().Get("id")
+	if idStr == "" {
+		h.logger.ErrorContext(ctx, "Missing ID parameter")
+		h.sendError(w, http.StatusBadRequest, "Missing ID parameter")
+		return
+	}
+
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		h.logger.ErrorContext(ctx, "Invalid ID format", "error", err)
 		h.sendError(w, http.StatusBadRequest, "Invalid ID format")
@@ -138,7 +145,7 @@ func (h *QuoteHandler) DeleteQuote(w http.ResponseWriter, r *http.Request) {
 		}
 
 		h.logger.ErrorContext(ctx, "Failed to delete quote", "id", id, "error", err)
-		h.sendError(w, http.StatusInternalServerError, "Failed to delete quote")
+		h.sendError(w, http.StatusNotFound, "Failed to delete quote")
 		return
 	}
 

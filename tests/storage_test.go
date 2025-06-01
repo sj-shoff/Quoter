@@ -4,6 +4,8 @@ import (
 	"context"
 	"quoter/internal/models"
 	"quoter/internal/storage/inmemory"
+	"strconv"
+	"sync"
 	"testing"
 )
 
@@ -56,6 +58,25 @@ func TestInMemoryStorage(t *testing.T) {
 		quotesAfter, _ := storage.GetAllQuotes(ctx)
 		if len(quotesAfter) != 0 {
 			t.Error("Quote not deleted")
+		}
+	})
+	t.Run("Concurrent Access", func(t *testing.T) {
+		var wg sync.WaitGroup
+		for i := 0; i < 100; i++ {
+			wg.Add(1)
+			go func(i int) {
+				defer wg.Done()
+				storage.AddQuote(ctx, models.Quote{
+					Author: strconv.Itoa(i),
+					Text:   "Quote" + strconv.Itoa(i),
+				})
+			}(i)
+		}
+		wg.Wait()
+
+		quotes, _ := storage.GetAllQuotes(ctx)
+		if len(quotes) != 100 {
+			t.Errorf("Expected 100 quotes, got %d", len(quotes))
 		}
 	})
 }

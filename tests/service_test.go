@@ -58,9 +58,12 @@ func TestQuoteService(t *testing.T) {
 	service := service.NewQuoteService(storage, logger)
 
 	t.Run("Add Quote", func(t *testing.T) {
-		_, err := service.AddQuote(ctx, models.Quote{Author: "Author", Text: "Quote"})
+		quote, err := service.AddQuote(ctx, models.Quote{Author: "Test", Text: "Hello"})
 		if err != nil {
 			t.Fatal(err)
+		}
+		if quote.ID == 0 || quote.Author != "Test" {
+			t.Errorf("Unexpected quote: %+v", quote)
 		}
 	})
 

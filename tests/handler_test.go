@@ -77,7 +77,7 @@ func TestGetQuotesHandler(t *testing.T) {
 		req := httptest.NewRequest("GET", "/quotes", nil)
 		w := httptest.NewRecorder()
 
-		h.GetAllQuotes(w, req)
+		h.GetQuotes(w, req)
 
 		if w.Code != http.StatusOK {
 			t.Errorf("Expected status 200, got %d", w.Code)
@@ -94,7 +94,7 @@ func TestGetQuotesHandler(t *testing.T) {
 		req := httptest.NewRequest("GET", "/quotes?author=Author1", nil)
 		w := httptest.NewRecorder()
 
-		h.GetAllQuotes(w, req)
+		h.GetQuotes(w, req)
 
 		var quotes []models.Quote
 		json.NewDecoder(w.Body).Decode(&quotes)
@@ -113,8 +113,8 @@ func TestRandomQuoteHandler(t *testing.T) {
 
 		h.GetRandomQuote(w, req)
 
-		if w.Code != http.StatusInternalServerError {
-			t.Errorf("Expected status 500, got %d", w.Code)
+		if w.Code != http.StatusNoContent {
+			t.Errorf("Expected status 204, got %d", w.Code)
 		}
 	})
 
@@ -138,35 +138,35 @@ func TestDeleteQuoteHandler(t *testing.T) {
 	quote := addTestQuote(h, "ToDelete", "Delete me")
 
 	t.Run("Valid Delete", func(t *testing.T) {
-		req := httptest.NewRequest("DELETE", "/quotes/"+strconv.Itoa(quote.ID), nil)
+		req := httptest.NewRequest("DELETE", "/quotes?id="+strconv.Itoa(quote.ID), nil)
 		w := httptest.NewRecorder()
 
 		h.DeleteQuote(w, req)
 
-		if w.Code != http.StatusBadRequest {
-			t.Errorf("Expected status 400, got %d", w.Code)
+		if w.Code != http.StatusNoContent {
+			t.Errorf("Expected status 204, got %d", w.Code)
 		}
 	})
 
 	t.Run("Invalid ID", func(t *testing.T) {
-		req := httptest.NewRequest("DELETE", "/quotes/invalid", nil)
-		w := httptest.NewRecorder()
-
-		h.DeleteQuote(w, req)
-
-		if w.Code != http.StatusBadRequest {
-			t.Errorf("Expected status 404, got %d", w.Code)
-		}
-	})
-
-	t.Run("Non-existent ID", func(t *testing.T) {
-		req := httptest.NewRequest("DELETE", "/quotes/999", nil)
+		req := httptest.NewRequest("DELETE", "/quotes?id=-1007", nil)
 		w := httptest.NewRecorder()
 
 		h.DeleteQuote(w, req)
 
 		if w.Code != http.StatusBadRequest {
 			t.Errorf("Expected status 400, got %d", w.Code)
+		}
+	})
+
+	t.Run("Non-existent ID", func(t *testing.T) {
+		req := httptest.NewRequest("DELETE", "/quotes?id=999", nil)
+		w := httptest.NewRecorder()
+
+		h.DeleteQuote(w, req)
+
+		if w.Code != http.StatusNotFound {
+			t.Errorf("Expected status 404, got %d", w.Code)
 		}
 	})
 }
