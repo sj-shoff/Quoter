@@ -133,15 +133,17 @@ func TestRandomQuoteHandler(t *testing.T) {
 }
 
 func TestDeleteQuoteHandler(t *testing.T) {
+	router := http.NewServeMux()
 	h := setupHandler()
+	router.HandleFunc("DELETE /quotes/{id}", h.DeleteQuote)
 
 	quote := addTestQuote(h, "ToDelete", "Delete me")
 
 	t.Run("Valid Delete", func(t *testing.T) {
-		req := httptest.NewRequest("DELETE", "/quotes?id="+strconv.Itoa(quote.ID), nil)
+		req := httptest.NewRequest("DELETE", "/quotes/"+strconv.Itoa(quote.ID), nil)
 		w := httptest.NewRecorder()
 
-		h.DeleteQuote(w, req)
+		router.ServeHTTP(w, req)
 
 		if w.Code != http.StatusNoContent {
 			t.Errorf("Expected status 204, got %d", w.Code)
@@ -149,10 +151,10 @@ func TestDeleteQuoteHandler(t *testing.T) {
 	})
 
 	t.Run("Invalid ID", func(t *testing.T) {
-		req := httptest.NewRequest("DELETE", "/quotes?id=-1007", nil)
+		req := httptest.NewRequest("DELETE", "/quotes/invalid_id", nil)
 		w := httptest.NewRecorder()
 
-		h.DeleteQuote(w, req)
+		router.ServeHTTP(w, req)
 
 		if w.Code != http.StatusBadRequest {
 			t.Errorf("Expected status 400, got %d", w.Code)
@@ -160,10 +162,10 @@ func TestDeleteQuoteHandler(t *testing.T) {
 	})
 
 	t.Run("Non-existent ID", func(t *testing.T) {
-		req := httptest.NewRequest("DELETE", "/quotes?id=999", nil)
+		req := httptest.NewRequest("DELETE", "/quotes/999", nil)
 		w := httptest.NewRecorder()
 
-		h.DeleteQuote(w, req)
+		router.ServeHTTP(w, req)
 
 		if w.Code != http.StatusNotFound {
 			t.Errorf("Expected status 404, got %d", w.Code)

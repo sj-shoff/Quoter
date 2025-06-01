@@ -117,7 +117,7 @@ func (h *QuoteHandler) GetRandomQuote(w http.ResponseWriter, r *http.Request) {
 func (h *QuoteHandler) DeleteQuote(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	idStr := r.URL.Query().Get("id")
+	idStr := r.PathValue("id")
 	if idStr == "" {
 		h.logger.ErrorContext(ctx, "Missing ID parameter")
 		h.sendError(w, http.StatusBadRequest, "Missing ID parameter")
